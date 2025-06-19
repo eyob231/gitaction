@@ -1,9 +1,9 @@
-name: Python Error Detection
+name: Test All Python Files
 
 on: [push]
 
 jobs:
-  detect-python-error:
+  test-python:
     runs-on: ubuntu-latest
     
     steps:
@@ -12,7 +12,33 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.10'
+        python-version: "3.10"
     
-    - name: Run failing Python script
-      run: python failing_script.py
+    - name: Install dependencies (if any)
+      run: |
+        python -m pip install --upgrade pip
+        # pip install -r requirements.txt  # Uncomment if you have requirements
+        
+    - name: Find and test all Python files
+      run: |
+        # Get list of changed Python files
+        PY_FILES=$(git diff --name-only HEAD^ HEAD | grep '\.py$')
+        
+        if [ -z "$PY_FILES" ]; then
+          echo "No Python files changed"
+          exit 0
+        fi
+        
+        echo "Testing these Python files:"
+        echo "$PY_FILES"
+        
+        # Test each changed file
+        for file in $PY_FILES; do
+          echo "Testing $file..."
+          python "$file" || echo "Error in $file"
+        done
+        
+        # Fail if any file had errors
+        for file in $PY_FILES; do
+          python "$file" || exit 1
+        done
